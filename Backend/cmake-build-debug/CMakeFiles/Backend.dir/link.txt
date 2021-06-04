@@ -1,1 +1,0 @@
-/usr/bin/c++ -g CMakeFiles/Backend.dir/main.cpp.o CMakeFiles/Backend.dir/src/server.cpp.o CMakeFiles/Backend.dir/src/bPGameServer.cpp.o CMakeFiles/Backend.dir/geneticPuzzle.cpp.o -o Backend 
