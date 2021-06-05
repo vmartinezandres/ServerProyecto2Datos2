@@ -16,6 +16,9 @@ class bPGameServer{
 private:
     string accion;
     string equipo;
+    string direccion;
+    string trayectoria;
+    int veces = 1;
     int nFilas = 15;
     int nColumnas = 25;
     int numJugadores;
@@ -25,7 +28,8 @@ private:
     int posFilaActual, posColumnaActual;
     int posFilaFinal, posColumnaFinal;
     int numListaAbierta = 0;
-    int posMenorF;
+    int posMenorF = 0;
+    int potencia;
     bool isEsquinaPar = false;
     jsonHandler JH;
 
@@ -37,6 +41,7 @@ public:
     string accionAlineacion();
     void accionTiempo();
     string accionPathfinding();
+    string accionTirar();
     string pathfinding(int, int);
     void agregarEnLA(int, int);
     void eliminarEnLA(int);

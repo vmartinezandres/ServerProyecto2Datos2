@@ -4,14 +4,14 @@
 
 
 using namespace std;
-
 // Structs
 struct bPGameServer::cuadrado {
     int numero, i, j;
     bool isJugadorAzul = false;
     bool isJugadorRojo = false;
     bool isCancha = false;
-    bool isFuera = false;
+    bool isBordeHorizontal = false;
+    bool isBordeVertical = false;
     bool isChecked = false;
     string equipo;
     cuadrado *padre = nullptr;
@@ -39,15 +39,15 @@ void bPGameServer::crearTerreno() {
 
     cout << "Marcando los bordes y las canchas..." << endl;
     // Marcando los bordes y las canchas
-    for (int i = 0; i < nColumnas; i++) {
-        terreno[0][i].isFuera = true;
-        terreno[nFilas-1][i].isFuera = true;
+    for (int i = 1; i < nColumnas - 1; i++) {
+        terreno[0][i].isBordeHorizontal = true;
+        terreno[nFilas-1][i].isBordeHorizontal = true;
 
     }
     for (int i = 1; i < nFilas - 1; i++) {
         if (i != 6 && i != 7 && i != 8) {
-            terreno[i][0].isFuera = true;
-            terreno[i][nColumnas - 1].isFuera = true;
+            terreno[i][0].isBordeVertical = true;
+            terreno[i][nColumnas - 1].isBordeVertical = true;
         }
         else {
             terreno[i][0].isCancha = true;
@@ -64,7 +64,7 @@ void bPGameServer::crearTerreno() {
         }
     }
 
-    listaAbierta = new cuadrado*[100];
+    listaAbierta = new cuadrado*[50];
 }
 
 string bPGameServer::leerJSON(string peticionCliente) {
@@ -83,6 +83,10 @@ string bPGameServer::leerJSON(string peticionCliente) {
     else if (accion == "Pathfinding") {
 
         return accionPathfinding();
+    }
+    else if (accion == "Tirar") {
+
+        return accionTirar();
     }
 
 }
@@ -238,7 +242,7 @@ string bPGameServer::accionAlineacion() {
     for (int i = 0; i < nFilas; i++){
 
         for (int j = 0; j < nColumnas; j++){
-            if (terreno[i][j].isFuera) {
+            if (terreno[i][j].isBordeHorizontal || terreno[i][j].isBordeVertical) {
                 cout << "[F]";
             }
             else if (terreno[i][j].isCancha) {
@@ -267,6 +271,148 @@ void bPGameServer::accionTiempo() {
 
 }
 
+string bPGameServer::accionTirar() {
+    posFilaActual = stoi(JH.buscarEnJSON("posFila"));
+    posColumnaActual = stoi(JH.buscarEnJSON("posColumna"));
+    direccion = JH.buscarEnJSON("direccion");
+    potencia = stoi(JH.buscarEnJSON("potencia"));
+
+    trayectoria = "{ \"cuadrados\" : [";
+
+    while (potencia != 0) {
+
+        // Direccion
+        if (direccion == "N" || direccion == "NE" || direccion == "NO") {
+            posFilaActual -= 1;
+
+        }
+
+        if (direccion == "S" || direccion == "SE" || direccion == "SO") {
+            posFilaActual += 1;
+        }
+
+        if (direccion == "E" || direccion == "NE" || direccion == "SE") {
+            posColumnaActual +=1;
+
+        }
+
+        if (direccion == "O" || direccion == "NO" ||direccion == "SO") {
+            posColumnaActual -=1;
+        }
+
+        // Trayectoria
+        trayectoria.append(to_string(terreno[posFilaActual][posColumnaActual].numero) + ", ");
+
+        // Contacto
+        // Contacto - Esquinas
+        if (terreno[posFilaActual][posColumnaActual].i == 0 && terreno[posFilaActual][posColumnaActual].j == 0) {
+            direccion = "SE";
+
+        }
+        else if (terreno[posFilaActual][posColumnaActual].i == 0 && terreno[posFilaActual][posColumnaActual].j == nColumnas - 1) {
+            direccion = "SO";
+
+        }
+        else if (terreno[posFilaActual][posColumnaActual].i == nFilas - 1 && terreno[posFilaActual][posColumnaActual].j == 0) {
+            direccion = "NE";
+        
+        }
+        else if (terreno[posFilaActual][posColumnaActual].i == nFilas - 1 && terreno[posFilaActual][posColumnaActual].j == nColumnas - 1) {
+            direccion = "NO";
+            
+        }
+
+        // Contacto - Bordes
+        else if (terreno[posFilaActual][posColumnaActual].isBordeHorizontal) {
+
+            if (direccion == "N") {
+                direccion = "S";
+
+            }
+
+            else if (direccion == "NE") {
+                direccion = "SE";
+
+            }
+
+            else if (direccion == "SE") {
+                direccion = "NE";
+
+            }
+
+            else if (direccion == "S") {
+                direccion = "N";
+            }
+
+            else if (direccion == "SO") {
+                direccion = "NO";
+
+            }
+
+            else if (direccion == "NO") {
+                direccion = "SO";
+
+            }
+        }
+
+        else if (terreno[posFilaActual][posColumnaActual].isBordeVertical) {
+            if (direccion == "E") {
+                direccion = "O";
+
+            }
+
+            else if (direccion == "NE") {
+                direccion = "NO";
+
+            }
+
+            else if (direccion == "SE") {
+                direccion = "SO";
+
+            }
+
+            else if (direccion == "O") {
+                direccion = "E";
+            }
+
+            else if (direccion == "SO") {
+                direccion = "SE";
+
+            }
+
+            else if (direccion == "NO") {
+                direccion = "NE";
+                
+            }
+
+        }
+
+        // Contacto - Jugador
+        else if (terreno[posFilaActual][posColumnaActual].isJugadorAzul || terreno[posFilaActual][posColumnaActual].isJugadorRojo) {
+            trayectoria = trayectoria.substr(0, trayectoria.length() - 1);
+            trayectoria.append("], \"tipoTrayectoria\" : \"CambioJugador\"}");
+            return trayectoria;
+
+
+        }
+        else if (terreno[posFilaActual][posColumnaActual].isCancha) {
+            trayectoria = trayectoria.substr(0, trayectoria.length() - 1);
+            trayectoria.append("], \"tipoTrayectoria\" : \"Gol\"}");
+
+            potencia = 5;
+
+        }
+
+        potencia -= 5;
+    }
+
+
+    
+
+
+
+}
+
 string bPGameServer::accionPathfinding() {
     equipo = JH.buscarEnJSON("equipo");
     posFilaActual = stoi(JH.buscarEnJSON("posFila"));
@@ -291,16 +437,17 @@ string bPGameServer::accionPathfinding() {
         }   
     }
 
-    terreno[posFilaActual][posColumnaActual].isChecked = true;
+    agregarEnLA(posFilaActual, posColumnaActual);
 
     return pathfinding(posFilaActual, posColumnaActual);
 
 }
 
 string bPGameServer::pathfinding(int i, int j) {
+
     posFilaActual = i;
     posColumnaActual = j;
-    cout << "la posicion actual es: " << posFilaActual << ", " << posColumnaActual << endl;
+    eliminarEnLA(posMenorF);
     terreno[posFilaActual][posColumnaActual].isChecked = true;
 
     // Estableciendo G y F, agregando a lista abierta y el padre en los cuadros alrededor
@@ -310,53 +457,100 @@ string bPGameServer::pathfinding(int i, int j) {
     }
     else {
         isEsquinaPar = false;
-    }
 
-    cout << "La esquina es par: " << isEsquinaPar << endl;
+    }
 
     for (int i = posFilaActual - 1; i < posFilaActual + 2; i++) {
         for (int j = posColumnaActual - 1; j < posColumnaActual + 2; j++) {
-            cout << "estamos en la fila: " << i << endl;
-            cout << "estamos en la columna: " << j << endl;
 
-            if (terreno[i][j].numero == terreno[posFilaFinal][posColumnaFinal].numero) {
-                cout << "se encontro el final" << endl;
-
-                terreno[i][j].padre = &terreno[posFilaActual][posColumnaActual];
-                cuadrado *cuadradoAux = &terreno[i][j];
-                string direccion;
-                while (cuadradoAux != nullptr){
-                    direccion.append("\"" + to_string(cuadradoAux->numero) + "\"" + ", ");
-                    cuadradoAux = cuadradoAux->padre;
-                } 
-                return  "{ \"cuadrados\" : [" + direccion + "]";
-
-            }
-            else {
-                if((!(terreno[i][j].isJugadorAzul || terreno[i][j].isJugadorRojo)) && (!terreno[i][j].isChecked)) {
+            if (i >= 0 && i < nFilas && j >= 0 && j < nColumnas) {
+                if (terreno[i][j].numero == terreno[posFilaFinal][posColumnaFinal].numero) {
 
                     terreno[i][j].padre = &terreno[posFilaActual][posColumnaActual];
+                    cuadrado *cuadradoAux = &terreno[i][j];
+                    direccion = "{ \"cuadrados\" : [";
+                    while (cuadradoAux->padre != nullptr){
+                        direccion.append(to_string(cuadradoAux->numero) + ", ");
+                        cuadradoAux = cuadradoAux->padre;
+                    } 
+                    direccion.append(to_string(cuadradoAux->numero) + "]}");
+                    return direccion;
 
-                    if ((i + j) % 2 == 0) {
-                        if (isEsquinaPar) {
-                            terreno[i][j].G = terreno[i][j].padre->G + 14;
-                        }
-                        else {
-                            terreno[i][j].G = terreno[i][j].padre->G + 10;
-                        }
-                        
-                    }
+                }
+                else {
+                    if((!(terreno[i][j].isJugadorAzul || terreno[i][j].isJugadorRojo)) && (!(terreno[i][j].isBordeHorizontal || terreno[i][j].isBordeVertical)) && (!(terreno[i][j].isChecked))) {
+                        if (terreno[i][j].padre == nullptr) {
+                            terreno[i][j].padre = &terreno[posFilaActual][posColumnaActual];  
 
-                    else {
-                        if (isEsquinaPar) {
-                            terreno[i][j].G = terreno[i][j].padre->G + 10;
                         }
+
+                        if ((i + j) % 2 == 0) {
+                            if (isEsquinaPar) {
+
+                                if (terreno[i][j].G == 0 || terreno[posFilaActual][posColumnaActual].G + 14 < terreno[i][j].G) {
+                                    if (terreno[i][j].G == 0) {
+                                        agregarEnLA(i, j);
+                                    }
+                                    else {
+                                        terreno[i][j].padre = &terreno[posFilaActual][posColumnaActual];  
+                                    }
+                                    terreno[i][j].G = terreno[i][j].padre->G + 14;
+                                    terreno[i][j].F = terreno[i][j].H + terreno[i][j].G;
+                                    
+                                }                  
+                            }
+                            else {
+
+                                if (terreno[i][j].G == 0 || terreno[posFilaActual][posColumnaActual].G + 10 < terreno[i][j].G) {
+                                    if (terreno[i][j].G == 0) {
+                                        agregarEnLA(i, j);
+                                    }
+                                    else {
+                                        terreno[i][j].padre = &terreno[posFilaActual][posColumnaActual];
+
+                                    }
+
+                                    terreno[i][j].G = terreno[i][j].padre->G + 10;
+                                    terreno[i][j].F = terreno[i][j].H + terreno[i][j].G;
+                                    
+                                }
+                            }
+                            
+                            
+                        }
+
                         else {
-                            terreno[i][j].G = terreno[i][j].padre->G + 14;
+                            if (isEsquinaPar) {
+
+                                if (terreno[i][j].G == 0 || terreno[posFilaActual][posColumnaActual].G+ 10 < terreno[i][j].G) {
+                                    if (terreno[i][j].G == 0) {
+                                        agregarEnLA(i, j);
+                                    }
+                                    else {
+                                        terreno[i][j].padre = &terreno[posFilaActual][posColumnaActual];
+                                    }
+                                    
+                                    terreno[i][j].G = terreno[i][j].padre->G + 10;
+                                    terreno[i][j].F = terreno[i][j].H + terreno[i][j].G;
+                                    
+                                }
+                            }
+                            else {
+                                if (terreno[i][j].G == 0 || terreno[posFilaActual][posColumnaActual].G + 14 < terreno[i][j].G) {
+                                    if (terreno[i][j].G == 0) {
+                                        agregarEnLA(i, j);
+                                    }
+                                    else {
+                                        terreno[i][j].padre = &terreno[posFilaActual][posColumnaActual];
+                                    }
+
+                                    terreno[i][j].G = terreno[i][j].padre->G + 14;
+                                    terreno[i][j].F = terreno[i][j].H + terreno[i][j].G;
+                                    
+                                }
+                            }
                         }
                     }
-                    terreno[i][j].F = terreno[i][j].H + terreno[i][j].G;
-                    agregarEnLA(i, j);
                 }
             }
         }
@@ -369,9 +563,6 @@ string bPGameServer::pathfinding(int i, int j) {
             posMenorF = i;
         }
     }
-    cout << "El menor F esta en el numero: " << listaAbierta[posMenorF]->numero << " que esta en: "<< listaAbierta[posMenorF]->i << ", " << listaAbierta[posMenorF]->j << " y es: " << listaAbierta[posMenorF]->F << endl;
-
-    eliminarEnLA(posMenorF);
 
     return pathfinding(listaAbierta[posMenorF]->i, listaAbierta[posMenorF]->j);
 
@@ -383,10 +574,10 @@ void bPGameServer::agregarEnLA(int i, int j) {
 }
 
 void bPGameServer::eliminarEnLA(int posicion){
-    for (int i = posicion; i < numListaAbierta - 1; i++) {
+    for (int i = posicion; i < numListaAbierta; i++) {
         listaAbierta[i] = listaAbierta[i + 1];
     }
-    listaAbierta[numListaAbierta - 2] = listaAbierta[numListaAbierta - 1];
-    numListaAbierta --;
+
+    numListaAbierta--;
 
 }
