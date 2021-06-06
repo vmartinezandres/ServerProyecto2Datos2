@@ -17,7 +17,6 @@ class bPGameServer{
 // Atributos
 private:
     string accion;
-    string equipo;
     string direccion;
     string trayectoria;
     int veces = 1;
@@ -29,7 +28,6 @@ private:
     int golesEquipoRojo = 0;
     int golesEquipoAzul = 0;
     int numCuadrado = 1;
-    int posFilaActual, posColumnaActual;
     int posFilaFinal, posColumnaFinal;
     int numListaAbierta = 0;
     int posMenorF = 0;
@@ -43,6 +41,7 @@ public:
     bPGameServer();
     string leerJSON(string);
     void crearTerreno();
+    void verTerreno();
     string accionAlineacion();
     string accionCantidadBolas();
     string accionPathfinding();

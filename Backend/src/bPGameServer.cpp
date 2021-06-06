@@ -9,11 +9,11 @@ struct bPGameServer::cuadrado {
     int numero, i, j;
     bool isJugadorAzul = false;
     bool isJugadorRojo = false;
-    bool isCancha = false;
+    bool isCanchaRoja = false;
+    bool isCanchaAzul = false;
     bool isBordeHorizontal = false;
     bool isBordeVertical = false;
     bool isChecked = false;
-    string equipo;
     cuadrado *padre = nullptr;
 
     int F = 0;
@@ -50,8 +50,8 @@ void bPGameServer::crearTerreno() {
             terreno[i][nColumnas - 1].isBordeVertical = true;
         }
         else {
-            terreno[i][0].isCancha = true;
-            terreno[i][nColumnas - 1].isCancha = true;
+            terreno[i][0].isCanchaRoja = true;
+            terreno[i][nColumnas - 1].isCanchaAzul = true;
         }
     }
 
@@ -245,13 +245,20 @@ string bPGameServer::accionAlineacion() {
 
     }
 
+    verTerreno();
+
+    return "{ \"mensaje\" : \"Alineacion establecida\"}";
+}
+
+void bPGameServer::verTerreno() {
+
     for (int i = 0; i < nFilas; i++){
 
         for (int j = 0; j < nColumnas; j++){
             if (terreno[i][j].isBordeHorizontal || terreno[i][j].isBordeVertical) {
                 cout << "[F]";
             }
-            else if (terreno[i][j].isCancha) {
+            else if (terreno[i][j].isCanchaRoja || terreno[i][j].isCanchaAzul) {
                 cout << "[C]";
             }
             else if (terreno[i][j].isJugadorRojo) {
@@ -267,8 +274,6 @@ string bPGameServer::accionAlineacion() {
         cout << endl;
         
     }
-    
-    return "{ \"mensaje\" : \"Alineacion establecida\"}";
 }
 
 string bPGameServer::accionCantidadBolas() {
@@ -430,9 +435,6 @@ string bPGameServer::tirar(int i, int j, int potencia, string sentido) {
         }
 
         else {
-            // Trayectoria
-            trayectoria.append(to_string(terreno[i][j].numero) + ", ");
-
             // Contacto - Jugador
             if (terreno[i][j].isJugadorAzul || terreno[i][j].isJugadorRojo) {  
                 jugadorActual = &terreno[i][j];
@@ -444,9 +446,11 @@ string bPGameServer::tirar(int i, int j, int potencia, string sentido) {
 
             }
 
-            else if (terreno[i][j].isCancha) {
+            // Contacto - Cancha
+            else if (terreno[i][j].isCanchaRoja || terreno[i][j].isCanchaAzul) {
                 trayectoria = trayectoria.substr(0, trayectoria.length() - 2);
-                if (terreno[posFilaActual][posColumnaActual].isJugadorAzul) {
+
+                if (terreno[i][j].isCanchaRoja) {
                     golesEquipoAzul++;
                     trayectoria.append("], \"tipoTrayectoria\" : \"Gol\", \"equipo\" : \"Azul\", \"goles\" : " + to_string(golesEquipoAzul) + ", ");
 
@@ -479,6 +483,9 @@ string bPGameServer::tirar(int i, int j, int potencia, string sentido) {
 
                 return trayectoria;
             }
+
+            // Trayectoria
+            trayectoria.append(to_string(terreno[i][j].numero) + ", ");
         }
 
         potencia -= 5;
@@ -491,10 +498,9 @@ string bPGameServer::tirar(int i, int j, int potencia, string sentido) {
 }
 
 string bPGameServer::accionPathfinding() {
-    equipo = JH.buscarEnJSON("equipo");
 
     posFilaFinal = 7;
-    if (equipo == "Rojo") {
+    if (jugadorActual->isJugadorRojo) {
         posColumnaFinal = nColumnas - 1;
 
     }
@@ -514,14 +520,12 @@ string bPGameServer::accionPathfinding() {
 
     agregarEnLA(jugadorActual->i, jugadorActual->j);
 
-    return pathfinding(posFilaActual, posColumnaActual);
+    return pathfinding(jugadorActual->i, jugadorActual->j);
 
 }
 
-string bPGameServer::pathfinding(int i, int j) {
+string bPGameServer::pathfinding(int posFilaActual, int posColumnaActual) {
 
-    posFilaActual = i;
-    posColumnaActual = j;
     eliminarEnLA(posMenorF);
     terreno[posFilaActual][posColumnaActual].isChecked = true;
 
@@ -543,12 +547,30 @@ string bPGameServer::pathfinding(int i, int j) {
 
                     terreno[i][j].padre = &terreno[posFilaActual][posColumnaActual];
                     cuadrado *cuadradoAux = &terreno[i][j];
-                    direccion = "{ \"cuadrados\" : [";
+                    direccion = "{ \"trayectoria\" : [";
                     while (cuadradoAux->padre->padre != nullptr){
                         direccion.append(to_string(cuadradoAux->numero) + ", ");
                         cuadradoAux = cuadradoAux->padre;
                     } 
                     direccion.append(to_string(cuadradoAux->numero) + "]}");
+
+                    // Reiniciar variables
+                    for (int i = 0; i < nFilas; i++) {
+                        for (int j = 0; j < nColumnas; j++) {
+                            terreno[i][j].H = 0;
+                            terreno[i][j].G = 0;
+                            terreno[i][j].F = 0;
+                            terreno[i][j].padre = nullptr;
+                            terreno[i][j].isChecked = false;
+                        }
+                    }
+
+                    for (int i = 0; i < numListaAbierta; i++) {
+                        listaAbierta[i] = nullptr;
+                    }
+                    numListaAbierta = 0;
+                    posMenorF = 0;
+                    
                     return direccion;
 
                 }
