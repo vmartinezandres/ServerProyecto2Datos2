@@ -75,20 +75,26 @@ string bPGameServer::leerJSON(string peticionCliente) {
         return accionAlineacion();
     
     }
-    else if (accion == "Tiempo") {
 
-        // thread hilo = thread(accionTiempo);
-        // hilo.join();
+    else if (accion == "CantidadBolas") {
+        return accionCantidadBolas();
+
     }
+
+    else if (accion == "TiroCentral") {
+        return accionTiroCentral();
+
+    }
+
     else if (accion == "Pathfinding") {
-
         return accionPathfinding();
+
     }
+
     else if (accion == "Tirar") {
-
         return accionTirar();
-    }
 
+    }
 }
 
 string bPGameServer::accionAlineacion() {
@@ -265,158 +271,227 @@ string bPGameServer::accionAlineacion() {
     return "{ \"mensaje\" : \"Alineacion establecida\"}";
 }
 
-void bPGameServer::accionTiempo() {
-    minutos = stoi(JH.buscarEnJSON("minutos"));
-    usleep(minutos * 60 * 1000000);
+string bPGameServer::accionCantidadBolas() {
+    numBolas = stoi(JH.buscarEnJSON("numBolas"));
 
+    return "{ \"mensaje\" : \"Cantidad de bolas establecida\"}";
+}
+
+string bPGameServer::accionTiroCentral(){
+    jugadorActual = &terreno[nFilas / 2][nColumnas / 2];
+    potenciaCliente = 300;
+
+    srand(time(0));
+    numAleatorio = 1 + rand() % 6; // numero aleatorio entre 1 - 6
+    switch (numAleatorio)
+    {
+    case 1:
+        direccion = "NE";
+        break;
+    
+    case 2:
+        direccion = "E";
+        break;
+
+    case 3:
+        direccion = "SE";
+        break;
+
+    case 4:
+        direccion = "SO";
+        break;
+
+    case 5:
+        direccion = "O";
+        break;
+
+    case 6:
+        direccion = "NO";
+        break;
+    }
+
+    return tirar(jugadorActual->i, jugadorActual->j, potenciaCliente, direccion);
 }
 
 string bPGameServer::accionTirar() {
-    posFilaActual = stoi(JH.buscarEnJSON("posFila"));
-    posColumnaActual = stoi(JH.buscarEnJSON("posColumna"));
+    potenciaCliente = stoi(JH.buscarEnJSON("potencia"));
     direccion = JH.buscarEnJSON("direccion");
-    potencia = stoi(JH.buscarEnJSON("potencia"));
 
-    trayectoria = "{ \"cuadrados\" : [";
+    return tirar(jugadorActual->i, jugadorActual->j, potenciaCliente, direccion);
+    
+}
+
+string bPGameServer::tirar(int i, int j, int potencia, string sentido) {
+    trayectoria = "{ \"trayectoria\" : [";
 
     while (potencia != 0) {
 
         // Direccion
-        if (direccion == "N" || direccion == "NE" || direccion == "NO") {
-            posFilaActual -= 1;
+        if (sentido == "N" || sentido == "NE" || sentido == "NO") {
+            i -= 1;
 
         }
 
-        if (direccion == "S" || direccion == "SE" || direccion == "SO") {
-            posFilaActual += 1;
+        if (sentido == "S" || sentido == "SE" || sentido == "SO") {
+            i += 1;
         }
 
-        if (direccion == "E" || direccion == "NE" || direccion == "SE") {
-            posColumnaActual +=1;
+        if (sentido == "E" || sentido == "NE" || sentido == "SE") {
+            j += 1;
 
         }
 
-        if (direccion == "O" || direccion == "NO" ||direccion == "SO") {
-            posColumnaActual -=1;
+        if (sentido == "O" || sentido == "NO" ||sentido == "SO") {
+            j -= 1;
         }
-
-        // Trayectoria
-        trayectoria.append(to_string(terreno[posFilaActual][posColumnaActual].numero) + ", ");
 
         // Contacto
         // Contacto - Esquinas
-        if (terreno[posFilaActual][posColumnaActual].i == 0 && terreno[posFilaActual][posColumnaActual].j == 0) {
-            direccion = "SE";
+        if (terreno[i][j].i == 0 && terreno[i][j].j == 0) {
+            sentido = "SE";
 
         }
-        else if (terreno[posFilaActual][posColumnaActual].i == 0 && terreno[posFilaActual][posColumnaActual].j == nColumnas - 1) {
-            direccion = "SO";
+        else if (terreno[i][j].i == 0 && terreno[i][j].j == nColumnas - 1) {
+            sentido = "SO";
 
         }
-        else if (terreno[posFilaActual][posColumnaActual].i == nFilas - 1 && terreno[posFilaActual][posColumnaActual].j == 0) {
-            direccion = "NE";
+        else if (terreno[i][j].i == nFilas - 1 && terreno[i][j].j == 0) {
+            sentido = "NE";
         
         }
-        else if (terreno[posFilaActual][posColumnaActual].i == nFilas - 1 && terreno[posFilaActual][posColumnaActual].j == nColumnas - 1) {
-            direccion = "NO";
+        else if (terreno[i][j].i == nFilas - 1 && terreno[i][j].j == nColumnas - 1) {
+            sentido = "NO";
             
         }
 
         // Contacto - Bordes
-        else if (terreno[posFilaActual][posColumnaActual].isBordeHorizontal) {
+        else if (terreno[i][j].isBordeHorizontal) {
 
-            if (direccion == "N") {
-                direccion = "S";
-
-            }
-
-            else if (direccion == "NE") {
-                direccion = "SE";
+            if (sentido == "N") {
+                sentido = "S";
 
             }
 
-            else if (direccion == "SE") {
-                direccion = "NE";
+            else if (sentido == "NE") {
+                sentido = "SE";
 
             }
 
-            else if (direccion == "S") {
-                direccion = "N";
-            }
-
-            else if (direccion == "SO") {
-                direccion = "NO";
+            else if (sentido == "SE") {
+                sentido = "NE";
 
             }
 
-            else if (direccion == "NO") {
-                direccion = "SO";
+            else if (sentido == "S") {
+                sentido = "N";
+            }
+
+            else if (sentido == "SO") {
+                sentido = "NO";
+
+            }
+
+            else if (sentido == "NO") {
+                sentido = "SO";
 
             }
         }
 
-        else if (terreno[posFilaActual][posColumnaActual].isBordeVertical) {
-            if (direccion == "E") {
-                direccion = "O";
+        else if (terreno[i][j].isBordeVertical) {
+            if (sentido == "E") {
+                sentido = "O";
 
             }
 
-            else if (direccion == "NE") {
-                direccion = "NO";
+            else if (sentido == "NE") {
+                sentido = "NO";
 
             }
 
-            else if (direccion == "SE") {
-                direccion = "SO";
+            else if (sentido == "SE") {
+                sentido = "SO";
 
             }
 
-            else if (direccion == "O") {
-                direccion = "E";
+            else if (sentido == "O") {
+                sentido = "E";
             }
 
-            else if (direccion == "SO") {
-                direccion = "SE";
+            else if (sentido == "SO") {
+                sentido = "SE";
 
             }
 
-            else if (direccion == "NO") {
-                direccion = "NE";
+            else if (sentido == "NO") {
+                sentido = "NE";
                 
             }
 
         }
 
-        // Contacto - Jugador
-        else if (terreno[posFilaActual][posColumnaActual].isJugadorAzul || terreno[posFilaActual][posColumnaActual].isJugadorRojo) {
-            trayectoria = trayectoria.substr(0, trayectoria.length() - 1);
-            trayectoria.append("], \"tipoTrayectoria\" : \"CambioJugador\"}");
-            return trayectoria;
+        else {
+            // Trayectoria
+            trayectoria.append(to_string(terreno[i][j].numero) + ", ");
+
+            // Contacto - Jugador
+            if (terreno[i][j].isJugadorAzul || terreno[i][j].isJugadorRojo) {  
+                jugadorActual = &terreno[i][j];
+                
+                trayectoria = trayectoria.substr(0, trayectoria.length() - 2);
+                trayectoria.append("], \"tipoTrayectoria\" : \"CambioJugador\", \"jugadorActual\" : " + to_string(jugadorActual->numero) + "}");
+                return trayectoria;
 
 
-        }
-        else if (terreno[posFilaActual][posColumnaActual].isCancha) {
-            trayectoria = trayectoria.substr(0, trayectoria.length() - 1);
-            trayectoria.append("], \"tipoTrayectoria\" : \"Gol\"}");
+            }
 
-            potencia = 5;
+            else if (terreno[i][j].isCancha) {
+                trayectoria = trayectoria.substr(0, trayectoria.length() - 2);
+                if (terreno[posFilaActual][posColumnaActual].isJugadorAzul) {
+                    golesEquipoAzul++;
+                    trayectoria.append("], \"tipoTrayectoria\" : \"Gol\", \"equipo\" : \"Azul\", \"goles\" : " + to_string(golesEquipoAzul) + ", ");
 
+                }
+                else {
+                    golesEquipoRojo++;
+                    trayectoria.append("], \"tipoTrayectoria\" : \"Gol\", \"equipo\" : \"Rojo\", \"goles\" : " + to_string(golesEquipoRojo) + ", ");
+
+                }
+
+                numBolas--;
+
+                if (numBolas == 0) {
+                    if (golesEquipoAzul > golesEquipoRojo) {
+                        trayectoria.append("\"equipoGanador\" : \"Azul\"}");
+
+                    }
+                    else if (golesEquipoAzul == golesEquipoRojo) {
+                        trayectoria.append("\"equipoGanador\" : \"Ambos\"}");
+
+                    }
+                    else {
+                        trayectoria.append("\"equipoGanador\" : \"Rojo\"}");
+
+                    }
+                }
+                else {
+                    trayectoria.append("\"equipoGanador\" : \"Ninguno\"}");
+                }
+
+                return trayectoria;
+            }
         }
 
         potencia -= 5;
     }
 
+    trayectoria = trayectoria.substr(0, trayectoria.length() - 2);
+    trayectoria.append("], \"tipoTrayectoria\" : \"Tiro\"}");
 
-    
-
-
-
+    return trayectoria;
 }
 
 string bPGameServer::accionPathfinding() {
     equipo = JH.buscarEnJSON("equipo");
-    posFilaActual = stoi(JH.buscarEnJSON("posFila"));
-    posColumnaActual = stoi(JH.buscarEnJSON("posColumna"));
 
     posFilaFinal = 7;
     if (equipo == "Rojo") {
@@ -437,7 +512,7 @@ string bPGameServer::accionPathfinding() {
         }   
     }
 
-    agregarEnLA(posFilaActual, posColumnaActual);
+    agregarEnLA(jugadorActual->i, jugadorActual->j);
 
     return pathfinding(posFilaActual, posColumnaActual);
 
@@ -469,7 +544,7 @@ string bPGameServer::pathfinding(int i, int j) {
                     terreno[i][j].padre = &terreno[posFilaActual][posColumnaActual];
                     cuadrado *cuadradoAux = &terreno[i][j];
                     direccion = "{ \"cuadrados\" : [";
-                    while (cuadradoAux->padre != nullptr){
+                    while (cuadradoAux->padre->padre != nullptr){
                         direccion.append(to_string(cuadradoAux->numero) + ", ");
                         cuadradoAux = cuadradoAux->padre;
                     } 

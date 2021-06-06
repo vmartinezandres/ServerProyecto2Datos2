@@ -2,9 +2,11 @@
 #define BACKEND_BPGAMESERVER_H
 
 #include <string>
-#include <thread>
+#include <pthread.h>
 #include <unistd.h>
 #include <cmath>
+#include <cstdlib>
+#include <ctime>
 
 #include "jsonHandler.h"
 
@@ -23,13 +25,16 @@ private:
     int nColumnas = 25;
     int numJugadores;
     int tipoAlineacion;
-    int minutos;
+    int numBolas;
+    int golesEquipoRojo = 0;
+    int golesEquipoAzul = 0;
     int numCuadrado = 1;
     int posFilaActual, posColumnaActual;
     int posFilaFinal, posColumnaFinal;
     int numListaAbierta = 0;
     int posMenorF = 0;
-    int potencia;
+    int potenciaCliente;
+    int numAleatorio;
     bool isEsquinaPar = false;
     jsonHandler JH;
 
@@ -39,9 +44,11 @@ public:
     string leerJSON(string);
     void crearTerreno();
     string accionAlineacion();
-    void accionTiempo();
+    string accionCantidadBolas();
     string accionPathfinding();
+    string accionTiroCentral();
     string accionTirar();
+    string tirar(int, int, int, string);
     string pathfinding(int, int);
     void agregarEnLA(int, int);
     void eliminarEnLA(int);
@@ -50,6 +57,7 @@ private:
     struct cuadrado;
     cuadrado **terreno;
     cuadrado **listaAbierta;
+    cuadrado *jugadorActual;
 
 };
 
