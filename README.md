@@ -6,3 +6,4 @@ Las siguientes instrucciones deben seguirse para su instalacion:
 sudo apt-get upgrade
 sudo apt-get update
 sudo apt install build-essential
+3) Escribir en la terminal: make run
