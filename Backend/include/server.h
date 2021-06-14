@@ -25,6 +25,10 @@ private:
 
 // Metodos
 public:
+    /**
+     * @brief iniciarServidor iniciar el servidor para escuchar futuras peticiones
+     * @return true/false si el servidor se inicio o no
+     */
     bool inicarServidor();
 };
 
