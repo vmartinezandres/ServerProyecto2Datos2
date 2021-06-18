@@ -549,10 +549,10 @@ string bPGameServer::pathfinding(int posFilaActual, int posColumnaActual) {
                     cuadrado *cuadradoAux = &terreno[i][j];
                     direccion = "{ \"trayectoria\" : [";
                     while (cuadradoAux->padre->padre != nullptr){
-                        direccion.append(to_string(cuadradoAux->numero) + ", ");
+                        direccion.append("{\"numero\" : " + to_string(cuadradoAux->numero) + "}, ");
                         cuadradoAux = cuadradoAux->padre;
                     } 
-                    direccion.append(to_string(cuadradoAux->numero) + "]}");
+                    direccion.append("{\"numero\" : " + to_string(cuadradoAux->numero) + "}]}");
 
                     // Reiniciar variables
                     for (int i = 0; i < nFilas; i++) {
