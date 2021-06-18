@@ -485,7 +485,7 @@ string bPGameServer::tirar(int i, int j, int potencia, string sentido) {
             }
 
             // Trayectoria
-            trayectoria.append(to_string(terreno[i][j].numero) + ", ");
+            trayectoria.append("{\"numero\" : " + to_string(terreno[i][j].numero) + "}, ");
         }
 
         potencia -= 5;
